@@ -11,7 +11,7 @@ from datetime import datetime
 #import requests_cache
 #requests_cache.install_cache('/tmp/sportzcal-cache', backend='sqlite', expire_after=900)
 
-def page_to_ical(html):
+def page_to_ical(html, suppress_dtstamp=False):
     soup = BeautifulSoup(html, 'lxml')
 
     cal = icalendar.Calendar()
@@ -46,7 +46,8 @@ def page_to_ical(html):
                 location_name = locparent.get_text()
         calevent = icalendar.Event()
         calevent.add('summary', title)
-        calevent.add('dtstamp', datetime.now())
+        if not suppress_dtstamp:
+            calevent.add('dtstamp', datetime.now())
         calevent.add('dtstart', starttime)
         calevent.add('dtend', endtime)
         calevent['location'] = icalendar.vText(location_name)
