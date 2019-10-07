@@ -4,6 +4,8 @@
 import requests
 import pytz
 import icalendar
+import argparse
+import sys
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -57,11 +59,24 @@ def page_to_ical(html, suppress_dtstamp=False):
     return cal.to_ical()
 
 def main():
-    response = requests.get('https://online.sportz.uni-passau.de/cgi/webpage.cgi?kursinfo=765C3A7B')
+    parser = argparse.ArgumentParser(description='Generate an iCalendar file from Sports Centre course dates')
+    parser.add_argument('courseinfo_url',
+            help='URL of the course info page, e.g. https://online.sportz.uni-passau.de/cgi/webpage.cgi?kursinfo=765C3A7B')
+    parser.add_argument('--output-file', '-o',
+            type=argparse.FileType('w'), default=sys.stdout,
+            help='File to write the ical data to. Default to stdout.')
+    parser.add_argument('--no-dtstamp', '-t',
+            action='store_true',
+            help='Don\'t add DTSTAMP attribute to output (not standard-compliant!). Allows for comparing output from multiple runs.')
+
+    args = parser.parse_args()
+
+    response = requests.get(args.courseinfo_url)
     response.raise_for_status()
-    ical = page_to_ical(response.content)
-    with open('/tmp/sportzcal.ics', 'w') as f:
-        f.write(ical.decode('utf8'))
+
+    ical = page_to_ical(response.content, args.no_dtstamp)
+
+    args.output_file.write(ical.decode('utf8'))
 
 if __name__ == '__main__':
     main()
