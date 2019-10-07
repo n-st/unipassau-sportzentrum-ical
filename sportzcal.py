@@ -33,20 +33,33 @@ def page_to_ical(html, suppress_dtstamp=False, verbose=False):
     if not eventtable:
         raise Exception('The Sports Centre hasn\'t provided a list of dates for this course.')
 
+    if verbose:
+        earliest_date = None
+        latest_date = None
+
     events = content.find('table').find_all('tr')
     for event in events:
         edate = event.find_all('td')[1].get_text()
         etimes = event.find_all('td')[2].get_text().split('-')
+
         starttime = datetime.strptime(edate+etimes[0], '%d.%m.%Y%H.%M')
         endtime = datetime.strptime(edate+etimes[1], '%d.%m.%Y%H.%M')
         starttime = pytz.timezone('Europe/Berlin').localize(starttime)
         endtime = pytz.timezone('Europe/Berlin').localize(endtime)
+
+        if verbose:
+            if not earliest_date or earliest_date > starttime:
+                earliest_date = starttime
+            if not latest_date or latest_date < endtime:
+                latest_date = endtime
+
         location_url = event.find('a').attrs['href']
         location_name = event.find('a').get_text()
         for loctag in content.find_all('a', attrs={'href': location_url}):
             locparent = loctag.parent
             if 'class' in locparent.attrs and 'bs_text' in locparent.attrs['class']:
                 location_name = locparent.get_text()
+
         calevent = icalendar.Event()
         calevent.add('summary', title)
         if not suppress_dtstamp:
@@ -58,7 +71,9 @@ def page_to_ical(html, suppress_dtstamp=False, verbose=False):
         cal.add_component(calevent)
 
     if verbose:
-        sys.stderr.write('%d events processed\n' % (len(cal.subcomponents)))
+        earliest_date = datetime.strftime(earliest_date, '%a, %d. %b %Y, %H:%M')
+        latest_date = datetime.strftime(latest_date, '%a, %d. %b %Y, %H:%M')
+        sys.stderr.write('Found %d events between %s and %s\n' % (len(cal.subcomponents), earliest_date, latest_date))
 
     return cal.to_ical()
 
