@@ -13,7 +13,7 @@ from datetime import datetime
 #import requests_cache
 #requests_cache.install_cache('/tmp/sportzcal-cache', backend='sqlite', expire_after=900)
 
-def page_to_ical(html, suppress_dtstamp=False):
+def page_to_ical(html, suppress_dtstamp=False, verbose=False):
     soup = BeautifulSoup(html, 'lxml')
 
     cal = icalendar.Calendar()
@@ -22,7 +22,8 @@ def page_to_ical(html, suppress_dtstamp=False):
 
     content = soup.find('div', attrs={'id': 'bs_content'})
     title = content.find('', attrs={'class': 'bs_head'}).get_text()
-    print('Course title:', title)
+    if verbose:
+        sys.stderr.write('Course title: %s\n' % (title))
 
     organames = content.find('', attrs={'class': 'bs_text'}).get_text()
     organizers = icalendar.vText(organames)
@@ -56,6 +57,9 @@ def page_to_ical(html, suppress_dtstamp=False):
         calevent['contact'] = organizers
         cal.add_component(calevent)
 
+    if verbose:
+        sys.stderr.write('%d events processed\n' % (len(cal.subcomponents)))
+
     return cal.to_ical()
 
 def main():
@@ -68,13 +72,18 @@ def main():
     parser.add_argument('--no-dtstamp', '-t',
             action='store_true',
             help='Don\'t add DTSTAMP attribute to output (not standard-compliant!). Allows for comparing output from multiple runs.')
+    parser.add_argument('--verbose', '-v',
+            action='store_true',
+            help='Print details about processed data to stderr.')
 
     args = parser.parse_args()
 
+    if args.verbose:
+        sys.stderr.write('Downloading URL: %s\n' % (args.courseinfo_url))
     response = requests.get(args.courseinfo_url)
     response.raise_for_status()
 
-    ical = page_to_ical(response.content, args.no_dtstamp)
+    ical = page_to_ical(response.content, args.no_dtstamp, args.verbose)
 
     args.output_file.write(ical.decode('utf8'))
 
