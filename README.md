@@ -10,7 +10,7 @@ Usage
 
 2. Run sportzcal with that URL; optionally specify an output file:
 
-    ./sportzcal.py https://online.sportz.uni-passau.de/cgi/webpage.cgi?kursinfo=765C3AF4 -o schach.ics
+       ./sportzcal.py https://online.sportz.uni-passau.de/cgi/webpage.cgi?kursinfo=765C3AF4 -o schach.ics
 
 3. Import the ics file into your calendar application or service.
 
